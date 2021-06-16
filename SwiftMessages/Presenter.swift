@@ -75,6 +75,7 @@ class Presenter: NSObject {
         case view(_: Weak<UIView>)
         
         func viewControllerValue() -> UIViewController? {
+            sm("viewControllerValue ")
             switch self {
             case .viewController(let weak):
                 return weak.value
@@ -83,7 +84,7 @@ class Presenter: NSObject {
             }
         }
         
-        func viewValue() -> UIView? {
+        func viewValue() -> UIView? { sm("viewValue ")
             switch self {
             case .viewController(let weak):
                 return weak.value?.view
@@ -121,20 +122,26 @@ class Presenter: NSObject {
         install()
         self.config.eventListeners.forEach { $0(.willShow) }
         showAnimation() { completed in
+            sm("showAnimation in show ")
             completion(completed)
             if completed {
+                sm("showAnimation completed")
                 if self.config.dimMode.modal {
                     self.showAccessibilityFocus()
                 } else {
                     self.showAccessibilityAnnouncement()
                 }
                 self.config.eventListeners.forEach { $0(.didShow) }
+            } else {
+                
+                    sm("showAnimation not completed")
             }
         }
     }
 
     private func showAnimation(completion: @escaping AnimationCompletion) {
-
+        
+            sm("showAnimation")
         func dim(_ color: UIColor) {
             self.maskingView.backgroundColor = UIColor.clear
             UIView.animate(withDuration: 0.2, animations: {
@@ -180,6 +187,7 @@ class Presenter: NSObject {
     }
 
     func hide(animated: Bool, completion: @escaping AnimationCompletion) {
+        sm("hide")
         isHiding = true
         self.config.eventListeners.forEach { $0(.willHide) }
         let context = animationContext()
@@ -192,6 +200,7 @@ class Presenter: NSObject {
             self.config.eventListeners.forEach { $0(.didHide) }
         }
         guard animated else {
+            sm("animated guard")
             action()
             return
         }
@@ -290,7 +299,8 @@ class Presenter: NSObject {
     }
 
     private func getPresentationContext() throws -> PresentationContext {
-
+        
+            sm("getPresentationContext \(config.presentationContext)")
         func newWindowViewController() -> UIViewController {
             let viewController = WindowViewController.newInstance(config: config)
             return viewController

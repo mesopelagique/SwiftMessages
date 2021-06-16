@@ -7,7 +7,9 @@
 //
 
 import UIKit
-
+func sm(_ message: String) {
+    print("sm: \(message)")
+}
 private let globalInstance = SwiftMessages()
 
 /**
@@ -374,7 +376,9 @@ open class SwiftMessages {
      */
     open func show(config: Config, view: UIView) {
         let presenter = Presenter(config: config, view: view, delegate: self)
+        sm("show \(presenter)")
         messageQueue.sync {
+            sm("enque message \(presenter)")
             enqueue(presenter: presenter)
         }
     }
@@ -405,7 +409,9 @@ open class SwiftMessages {
      */
     open func show(config: Config, viewProvider: @escaping ViewProvider) {
         DispatchQueue.main.async { [weak self] in
-            guard let strongSelf = self else { return }
+            guard let strongSelf = self else {
+                sm("show(c strong ")
+                return }
             let view = viewProvider()
             strongSelf.show(config: config, view: view)
         }
@@ -572,6 +578,7 @@ open class SwiftMessages {
             dequeueNext()
         }
         if let delay = presenter.delayShow {
+            sm("delay \(presenter)")
             delays.add(presenter: presenter)
             messageQueue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 // Don't enqueue if the view has been hidden during the delay window.
@@ -579,12 +586,16 @@ open class SwiftMessages {
                 doEnqueue()
             }
         } else {
+            sm("doEnqueue \(presenter)")
             doEnqueue()
         }
     }
     
     fileprivate func dequeueNext() {
-        guard self._current == nil, queue.count > 0 else { return }
+        guard self._current == nil, queue.count > 0 else { return
+            
+                sm("dequeueNext empty queue")
+        }
         let current = queue.removeFirst()
         self._current = current
         // Set `autohideToken` before the animation starts in case
@@ -593,7 +604,10 @@ open class SwiftMessages {
         self.autohideToken = current
         current.showDate = CACurrentMediaTime()
         DispatchQueue.main.async { [weak self] in
-            guard let strongSelf = self else { return }
+            guard let strongSelf = self else {
+                
+                    sm("dequeueNext strongSelf")
+                return }
             do {
                 try current.show { completed in
                     guard let strongSelf = self else { return }
@@ -601,6 +615,7 @@ open class SwiftMessages {
                         strongSelf.messageQueue.sync {
                             strongSelf.internalHide(presenter: current)
                         }
+                        sm("not completed")
                         return
                     }
                     if current === strongSelf.autohideToken {
@@ -608,6 +623,7 @@ open class SwiftMessages {
                     }
                 }
             } catch {
+                sm("\(error)")
                 strongSelf.messageQueue.sync {
                     strongSelf._current = nil
                 }
@@ -625,9 +641,14 @@ open class SwiftMessages {
     }
  
     fileprivate func hideCurrent(animated: Bool = true) {
-        guard let current = _current, !current.isHiding else { return }
+        sm("hideCurrent \(animated)")
+        guard let current = _current, !current.isHiding else {
+            
+                sm("hideCurrent isHiding")
+            return }
         let action = { [weak self] in
             current.hide(animated: animated) { (completed) in
+                sm("hide(animated: animated) { (completed) ")
                 guard completed, let strongSelf = self else { return }
                 strongSelf.messageQueue.sync {
                     guard strongSelf._current === current else { return }
@@ -645,6 +666,7 @@ open class SwiftMessages {
     fileprivate weak var autohideToken: AnyObject?
 
     fileprivate func queueAutoHide() {
+        sm("queueAutoHide ")
         guard let current = _current else { return }
         autohideToken = current
         if let pauseDuration = current.pauseDuration {
